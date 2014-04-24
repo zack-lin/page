@@ -1,0 +1,13 @@
+{
+  "name": "page",
+  "repo": "elf/page",
+  "description": "page,",
+  "version": "0.1.0",
+  "keywords": ["page"],
+  "scripts": ["index.js"],
+  "dependencies": {},
+  "remotes": [
+    "http://git.ucweb.local"
+  ],
+  "license": "MIT"
+}
