@@ -1,8 +1,8 @@
 {
   "name": "page",
-  "repo": "elf/page",
+  "repo": "linzj3/page",
   "description": "page,",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "keywords": ["page"],
   "scripts": ["index.js"],
   "dependencies": {},
