@@ -1,0 +1,13 @@
+{
+  "name": "page",
+  "repo": "zack-li/page",
+  "description": "page",
+  "version": "0.1.0",
+  "keywords": ["page"],
+  "scripts": ["index.js"],
+  "dependencies": {},
+  "remotes": [
+    "ttps://github.com/zack-lin/page"
+  ],
+  "license": "MIT"
+}
