@@ -17,44 +17,42 @@
  /*jshint bitwise: false */
 'use strict';
 var running = false,
-    showDefaultPage, lastPage;
+  showDefaultPage, lastPage, Page;
 /**
  * 启动路由
  * @param  {string} defaultPage 默认页面
  * @return {null}
  */
 exports.start = function (defaultPage) {
-    if (!running) {
-        window.addEventListener('hashchange', onhashchange, false);
-        document.addEventListener('click', onclick, false);
+  if (!running) {
+    window.addEventListener('hashchange', onhashchange, false);
+    document.addEventListener('click', onclick, false);
 
-        running = true;
-        if ((typeof defaultPage) === 'string') {
-            showDefaultPage = function () {
-                //changePage(defaultPage);
-                location.replace('#!/' + defaultPage);
-            };
-        }
-        onhashchange({
-            newURL: window.location.href
-        });
+    running = true;
+    if ((typeof defaultPage) === 'string') {
+      showDefaultPage = function () {
+        location.replace('#!/' + defaultPage);
+      };
     }
+    onhashchange({
+      newURL: window.location.href
+    });
+  }
 };
 
-
 function onclick(e) {
-    var target = closest(e.target, 'a');
-    if (target) {
-        var newUrl = target.getAttribute('href'),
-            oldPage = getPage(window.location.href),
-            newPage = getPage(newUrl);
-        //对于hashbang中同一个页面，多次a链接跳转只产生一条历史记录
-        if (oldPage === newPage) {
-            e.preventDefault();
-            e.stopPropagation();
-            window.location.replace(newUrl);
-        }
+  var target = closest(e.target, 'a');
+  if (target) {
+    var newUrl = target.getAttribute('href'),
+      oldPage = getPage(window.location.href),
+      newPage = getPage(newUrl);
+    //对于hashbang中同一个页面，多次a链接跳转只产生一条历史记录
+    if (oldPage === newPage && newUrl.indexOf('replace=no') < 0) {
+      e.preventDefault();
+      e.stopPropagation();
+      window.location.replace(newUrl);
     }
+  }
 }
 /**
  * 获得从指定节点开始，向祖先节点找到的指定名称的节点
@@ -62,44 +60,48 @@ function onclick(e) {
  * @return {[type]}      [description]
  */
 function closest(node, nodeName) {
-    while (node && node.nodeName.toLowerCase() != nodeName) {
-        if (isDocument(node))
-            return null;
-        node = node.parentNode;
-    }
-    return node;
+  while (node && node.nodeName.toLowerCase() != nodeName) {
+    if (isDocument(node))
+      return null;
+    node = node.parentNode;
+  }
+  return node;
 }
 function isDocument(node) {
-    return node != null && node.nodeType == node.DOCUMENT_NODE
+  return node != null && node.nodeType == node.DOCUMENT_NODE
 }
 function getPage(url) {
-    url = url || '';
-    var hashIndex = url.indexOf('#!/'),
-        hash = (hashIndex >= 0) ? url.slice(hashIndex + 3) : '';
-    var searchIndex = hash.indexOf('?');
-    /*,
-     search = (searchIndex >= 0) ? hash.slice(searchIndex + 1) : '';*/
-    var page = (searchIndex >= 0) ? hash.slice(0, searchIndex) : hash;
-    return page;
+  url = url || '';
+  var hashIndex = url.indexOf('#!/'),
+    hash = (hashIndex >= 0) ? url.slice(hashIndex + 3) : '';
+  var searchIndex = hash.indexOf('?');
+  /*,
+   search = (searchIndex >= 0) ? hash.slice(searchIndex + 1) : '';*/
+  var page = (searchIndex >= 0) ? hash.slice(0, searchIndex) : hash;
+  return page;
 }
 function onhashchange(e) {
-    if (!running) return;
+  if (!running) return;
 
-    var oldCtx = parseURL(e.oldURL);
-    var newCtx = parseURL(e.newURL);
+  var oldCtx = parseURL(e.oldURL);
+  var newCtx = parseURL(e.newURL);
 
-    if (lastPage && oldCtx.page === newCtx.page) {
-        lastPage.show(newCtx.state);
-        return;
+  if (lastPage && oldCtx.page === newCtx.page) {
+    pageInfo(newCtx);
+    lastPage.show(newCtx.state, {
+      prevPage: oldCtx.page,
+      rebuild: pages[newCtx.page].rebuild
+    });
+    return;
+  }
+
+  if (!lastPage && oldCtx.page) {
+    var oldPage = document.getElementById('page-' + oldCtx.page);
+    if (oldPage) {
+      oldPage.style['display'] = 'none';
     }
-
-    if (!lastPage && oldCtx.page) {
-        var oldPage = document.getElementById('page-' + oldCtx.page);
-        if (oldPage) {
-            oldPage.style['display'] = 'none';
-        }
-    }
-    changePage(newCtx.page, newCtx.state);
+  }
+  changePage(newCtx, oldCtx);
 }
 /**
  * 将URL解析成page和state
@@ -107,58 +109,87 @@ function onhashchange(e) {
  * @return {object}    解析后的上下文，包括url、page、state三个属性
  */
 function parseURL(url) {
-    url = url || '';
-    var decode = window.decodeURIComponent;
-    var hashIndex = url.indexOf('#!/'),
-        hash = (hashIndex >= 0) ? url.slice(hashIndex + 3) : '';
-    var searchIndex = hash.indexOf('?'),
-        search = (searchIndex >= 0) ? hash.slice(searchIndex + 1) : '';
-    var page = (searchIndex >= 0) ? hash.slice(0, searchIndex) : hash;
-    // Fragment shouldn't contain `&`, use `!!` instead
-    // http://tools.ietf.org/html/rfc3986
-    // @example #!/wallpaper?super=beauty!!sub=nude
-    var pairs = search.split(/!!(?!!)/),
-        state = {};
-    for (var j = 0; j < pairs.length; j++) {
-        var pair = pairs[j].replace(/\+/g, '%20'),
-            i = pair.indexOf('='),
-            key = ~i ? pair.slice(0, i) : pair,
-            value = ~i ? pair.slice(i + 1) : '';
-        try {
-            key = decode(key);
-            value = decode(value);
-        } catch (e) {
-            console.log(e);
-        }
-        state[key] = value;
+  url = url || '';
+  var decode = window.decodeURIComponent;
+  var hashIndex = url.indexOf('#!/'),
+    hash = (hashIndex >= 0) ? url.slice(hashIndex + 3) : '';
+  var searchIndex = hash.indexOf('?'),
+    search = (searchIndex >= 0) ? hash.slice(searchIndex + 1) : '';
+  var page = (searchIndex >= 0) ? hash.slice(0, searchIndex) : hash;
+  if(page && page.indexOf('&')>=0) {
+    //兼容手机QQ内部webview打开页面时，自动给url末端强制拼接“&from=androidqq” ，这么巧妙的方法，我竟无言以对
+    page = page.substring(0, page.indexOf('&'));
+  }
+  // Fragment shouldn't contain `&`, use `!!` instead
+  // http://tools.ietf.org/html/rfc3986
+  // @example #!/wallpaper?super=beauty!!sub=nude
+  var pairs = search.split(/!!(?!!)/),
+    state = {};
+  for (var j = 0; j < pairs.length; j++) {
+    var pair = pairs[j].replace(/\+/g, '%20'),
+      i = pair.indexOf('='),
+      key = ~i ? pair.slice(0, i) : pair,
+      value = ~i ? pair.slice(i + 1) : '';
+    try {
+      key = decode(key);
+      value = decode(value);
+    } catch (e) {
+      console.log(e);
     }
-    return {
-        'url': url,
-        'page': page,
-        'state': state
-    };
+    state[key] = value;
+  }
+  console.log(page);
+  return {
+    'url': url,
+    'page': page,
+    'state': state
+  };
 }
 /**
  * 切换页面
  * @param {string} page  页面名称
  * @param {object} state 状态兑对象
  */
-function changePage(page, state) {
-    if (page === '') {
-        showDefaultPage();
-        return;
+var pages = {};
+
+function changePage(next, prev) {
+  if (next.page === '') {
+    showDefaultPage();
+    return;
+  }
+  require.async('page/' + next.page, function (newPage) {
+    if (newPage) {
+      pageInfo(next);
+
+      if (lastPage && lastPage.hide) {
+        lastPage.hide();
+      }
+      if (newPage.show) {
+        newPage.show(next.state, {
+          prevPage: prev.page,
+          rebuild: pages[next.page].rebuild
+        });
+      }
+      lastPage = newPage;
+    } else {
+      showDefaultPage();
     }
-    require.async('page/' + page, function (newPage) {
-        if (newPage) {
-            if (lastPage && lastPage.hide) {
-                lastPage.hide();
-            }
-            if (newPage.show) {
-                newPage.show(state);
-            }
-            lastPage = newPage;
-        } else {
-            showDefaultPage();
-        }
-    });
+  });
+}
+
+function pageInfo(next) {
+  var _next = pages[next.page];
+  if (_next) {
+    _next.rebuild = !objectCompare(_next._state, next.state);
+    _next._state = next.state;
+  } else {
+    pages[next.page] = {
+      _state: next.state,
+      rebuild: true
+    };
+  }
+}
+
+function objectCompare(obj1, obj2) {
+  return JSON.stringify(obj1) === JSON.stringify(obj2);
 }
