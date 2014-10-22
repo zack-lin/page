@@ -2,7 +2,7 @@
   "name": "page",
   "repo": "zack-li/page",
   "description": "page",
-  "version": "0.1.0",
+  "version": "0.1.4",
   "keywords": ["page"],
   "scripts": ["index.js"],
   "dependencies": {},
