@@ -116,10 +116,7 @@ function parseURL(url) {
   var searchIndex = hash.indexOf('?'),
     search = (searchIndex >= 0) ? hash.slice(searchIndex + 1) : '';
   var page = (searchIndex >= 0) ? hash.slice(0, searchIndex) : hash;
-  if(page && page.indexOf('&')>=0) {
-    //兼容手机QQ内部webview打开页面时，自动给url末端强制拼接“&from=androidqq” ，这么巧妙的方法，我竟无言以对
-    page = page.substring(0, page.indexOf('&'));
-  }
+  page = substrAmp(page);
   // Fragment shouldn't contain `&`, use `!!` instead
   // http://tools.ietf.org/html/rfc3986
   // @example #!/wallpaper?super=beauty!!sub=nude
@@ -136,13 +133,22 @@ function parseURL(url) {
     } catch (e) {
       console.log(e);
     }
-    state[key] = value;
+    state[key] = substrAmp(value);
   }
   return {
     'url': url,
     'page': page,
     'state': state
   };
+}
+
+function substrAmp(str){
+  if(str && str.indexOf('&')>=0) {
+    //兼容某国产浏览器分享页面时，自动给url末端强制拼接“&from=androidqq” ，这么巧妙的方法，我竟无言以对
+    str = str.substring(0, str.indexOf('&'));
+  }
+
+  return str;
 }
 /**
  * 切换页面
