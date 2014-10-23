@@ -144,7 +144,7 @@ function parseURL(url) {
 
 function substrAmp(str){
   if(str && str.indexOf('&')>=0) {
-    //兼容某国产浏览器分享页面时，自动给url末端强制拼接“&from=androidqq” ，这么巧妙的方法，我竟无言以对
+    //兼容手机QQ打开分享页面时，自动给url末端强制拼接“&from=androidqq” ，这么巧妙的方法，我竟无言以对
     str = str.substring(0, str.indexOf('&'));
   }
 
